@@ -30,7 +30,7 @@ def boost(model, sampler: Sampler = multinomial()):
     regular expression.
 
     """
-    fsm = RegexGuide("(\S*[\u3131-\u314e|\u314f-\u3163|\uac00-\ud7a3]+\S*)", model.tokenizer)
+    fsm = RegexGuide(r"[가-힣0-9\s]+", model.tokenizer)
 
     device = model.device
     generator = SequenceGenerator(fsm, model, sampler, device)
@@ -45,7 +45,7 @@ def boost_mlxlm(
 ):
     from outlines.processors import BoostLogitsProcessor
 
-    logits_processor = BoostLogitsProcessor("(\S*[\u3131-\u314e|\u314f-\u3163|\uac00-\ud7a3]+\S*)", tokenizer=model.tokenizer)
+    logits_processor = BoostLogitsProcessor(r"[가-힣0-9\s]+", tokenizer=model.tokenizer)
     return SequenceGeneratorAdapter(model, logits_processor, sampler)
 
 
@@ -56,7 +56,7 @@ def boost_llamacpp(
 ):
     from outlines.integrations.llamacpp import BoostLogitsProcessor
 
-    logits_processor = BoostLogitsProcessor("(\S*[\u3131-\u314e|\u314f-\u3163|\uac00-\ud7a3]+\S*)", llm=model.model)
+    logits_processor = BoostLogitsProcessor(r"[가-힣0-9\s]+", llm=model.model)
     return SequenceGeneratorAdapter(model, logits_processor, sampler)
 
 
@@ -67,7 +67,7 @@ def boost_vllm(
 ):
     from outlines.integrations.vllm import BoostLogitsProcessor
 
-    logits_processor = BoostLogitsProcessor("(\S*[\u3131-\u314e|\u314f-\u3163|\uac00-\ud7a3]+\S*)", model.model)
+    logits_processor = BoostLogitsProcessor(r"[가-힣0-9\s]+", model.model)
     return SequenceGeneratorAdapter(model, logits_processor, sampler)
 
 
