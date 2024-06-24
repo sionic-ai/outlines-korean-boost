@@ -101,6 +101,69 @@ class FSMLogitsProcessor(BaseLogitsProcessor):
         """Return a copy of the logits processor."""
         return FSMLogitsProcessor(tokenizer=self.tokenizer, fsm=self.fsm.copy())
 
+class BoostLogitsProcessor(FSMLogitsProcessor):
+    """Bias generation based on a boosting expression.
+
+    Attributes
+    ----------
+    tokenizer
+        The tokenizer used to convert tokens to ids.
+    fsm
+        The finite state machine which is used to bias the logits.
+    """
+
+    def __init__(self, regex_string: str, tokenizer: "Tokenizer", boost_factor: float = 1.1, repression_factor: float = 0.0):
+        """Compile the FSM that drives the regex-guided generation.
+
+        Parameters
+        ----------
+        regex_string
+            A string that represents a regular expression
+        tokenizer
+            An Outlines tokenizer
+        """
+        fsm = RegexGuide(regex_string, tokenizer)
+        self.boost_factor = boost_factor
+        self.repression_factor = repression_factor
+        super().__init__(tokenizer=tokenizer, fsm=fsm)
+        
+    
+    def process_logits(
+        self, input_ids: List[int], logits: torch.Tensor
+    ) -> NDArray[np.float32]:
+        """Use the FSM to bias the logits before sampling the next token.
+
+        Parameters
+        ----------
+        input_ids
+            The input token ids.
+        logits
+            The logits.
+
+        Returns
+        -------
+        torch.Tensor
+            The biased logits.
+        """
+        if self._is_first_token:
+            self._is_first_token = False
+        else:
+            last_token = input_ids[-1]
+            self._fsm_state = self.fsm.get_next_state(self._fsm_state, last_token)
+
+        allowed_tokens = self.fsm.get_next_instruction(self._fsm_state).tokens
+        allowed_tokens = torch.tensor(allowed_tokens, device=logits.device)
+
+        # Create a mask of ones with the same shape as logits
+        mask = torch.ones_like(logits)*self.repression_factor
+
+        # Scale the logits of allowed tokens by 1.1
+        logits[allowed_tokens] *= self.boost_factor
+        
+
+        # Multiply logits by the mask (this will keep logits unchanged, as mask is ones)
+        logits = logits * mask
+        return logits
 
 class RegexLogitsProcessor(FSMLogitsProcessor):
     """Bias generation based on a regular expression.

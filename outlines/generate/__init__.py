@@ -6,3 +6,4 @@ from .fsm import fsm
 from .json import json
 from .regex import regex
 from .text import text
+from .boost import boost

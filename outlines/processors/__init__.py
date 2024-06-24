@@ -4,4 +4,5 @@ from .structured import (
     FSMLogitsProcessor,
     JSONLogitsProcessor,
     RegexLogitsProcessor,
+    BoostLogitsProcessor,
 )
